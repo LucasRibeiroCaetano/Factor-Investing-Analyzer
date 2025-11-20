@@ -23,16 +23,16 @@ class Config:
         "Low Volatility": "USMV"
     }
     
-    # Geography ETF Tickers
+    # Geography ETF Tickers (optimized for maximum historical data)
     GEOGRAPHY_TICKERS: Dict[str, str] = {
-        "US Market": "SPY",
-        "Europe": "EXSA.DE",
-        "Emerging Markets": "EEM"
+        "US Market": "SPY",           # Data from 1993
+        "Europe": "IEV",              # iShares Europe ETF - Data from 2000
+        "Emerging Markets": "EEM"     # Data from 2003
     }
     
     # Currency Conversion (Base Currency: EUR)
     CURRENCY_PAIR: str = "EURUSD=X"  # Will be inverted to get USD/EUR rate
-    USD_TICKERS: List[str] = ["SPY", "EEM", "VLUE", "MTUM", "QUAL", "USMV"]  # Tickers that need USD to EUR conversion
+    USD_TICKERS: List[str] = ["SPY", "IEV", "EEM", "VLUE", "MTUM", "QUAL", "USMV"]  # Tickers that need USD to EUR conversion
     
     # Date Range for Analysis (defaults, Portuguese format: DD/MM/YYYY)
     START_DATE: str = "01/01/2000"
