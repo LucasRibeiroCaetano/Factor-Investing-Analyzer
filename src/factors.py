@@ -37,7 +37,7 @@ class FactorDataLoader:
         self.start_date: str = start_date
         self.end_date: str = end_date
         self.currency_pair: str = currency_pair
-        self.eur_usd_rate: Optional[pd.Series] = None
+        self.usd_eur_rate: Optional[pd.Series] = None
         
     def _fetch_data(self, ticker: str) -> Optional[pd.DataFrame]:
         """
@@ -78,7 +78,8 @@ class FactorDataLoader:
     
     def _load_currency_conversion(self) -> bool:
         """
-        Load EUR/USD exchange rate for currency conversion.
+        Load USD/EUR exchange rate for currency conversion.
+        Inverts EUR/USD rate to get USD/EUR.
         
         Returns:
             True if successful, False otherwise
@@ -86,34 +87,35 @@ class FactorDataLoader:
         currency_data = self._fetch_data(self.currency_pair)
         
         if currency_data is not None and 'Close' in currency_data.columns:
-            self.eur_usd_rate = currency_data['Close']
+            # Invert EUR/USD to get USD/EUR rate
+            self.usd_eur_rate = 1.0 / currency_data['Close']
             return True
         else:
-            # Fallback: use constant conversion rate
-            warnings.warn(f"Failed to load {self.currency_pair}, using constant rate 1.10")
+            # Fallback: use constant conversion rate (1 USD = 0.91 EUR)
+            warnings.warn(f"Failed to load {self.currency_pair}, using constant rate 0.91")
             return False
     
-    def _convert_eur_to_usd(self, eur_prices: pd.Series, ticker: str) -> pd.Series:
+    def _convert_usd_to_eur(self, usd_prices: pd.Series, ticker: str) -> pd.Series:
         """
-        Convert EUR-denominated prices to USD.
+        Convert USD-denominated prices to EUR.
         
         Args:
-            eur_prices: Price series in EUR
+            usd_prices: Price series in USD
             ticker: Ticker symbol for logging
             
         Returns:
-            Price series converted to USD
+            Price series converted to EUR
         """
-        if self.eur_usd_rate is not None:
+        if self.usd_eur_rate is not None:
             # Align dates and forward-fill missing rates
-            aligned_rate = self.eur_usd_rate.reindex(eur_prices.index, method='ffill')
-            return eur_prices * aligned_rate
+            aligned_rate = self.usd_eur_rate.reindex(usd_prices.index, method='ffill')
+            return usd_prices * aligned_rate
         else:
-            # Use constant conversion rate as fallback
-            return eur_prices * 1.10
+            # Use constant conversion rate as fallback (1 USD = 0.91 EUR)
+            return usd_prices * 0.91
     
-    def load_tickers(self, tickers_dict: Dict[str, str], eur_tickers: List[str]) -> pd.DataFrame:
-        """Load and process ticker data with currency conversion."""
+    def load_tickers(self, tickers_dict: Dict[str, str], usd_tickers: List[str]) -> pd.DataFrame:
+        """Load and process ticker data with currency conversion to EUR base."""
         # Load currency conversion rate first
         self._load_currency_conversion()
         
@@ -150,9 +152,9 @@ class FactorDataLoader:
                 # Ensure the Series has a name
                 prices.name = name
                 
-                # Convert EUR tickers to USD
-                if ticker in eur_tickers:
-                    prices = self._convert_eur_to_usd(prices, ticker)
+                # Convert USD tickers to EUR
+                if ticker in usd_tickers:
+                    prices = self._convert_usd_to_eur(prices, ticker)
                     prices.name = name  # Restore name after conversion
                 
                 price_data[name] = prices

@@ -56,7 +56,7 @@ class FactorInvestingAnalyzer:
         print("\nLoading Factor ETF data...")
         self.factor_prices = self.data_loader.load_tickers(
             tickers_dict=self.config.FACTOR_TICKERS,
-            eur_tickers=self.config.EUR_TICKERS
+            usd_tickers=self.config.USD_TICKERS
         )
         self.factor_returns = self.data_loader.get_returns(self.factor_prices)
         print(f"Factor data loaded: {len(self.factor_prices)} days, {len(self.factor_prices.columns)} factors")
@@ -65,7 +65,7 @@ class FactorInvestingAnalyzer:
         print("\nLoading Geography ETF data...")
         self.geography_prices = self.data_loader.load_tickers(
             tickers_dict=self.config.GEOGRAPHY_TICKERS,
-            eur_tickers=self.config.EUR_TICKERS
+            usd_tickers=self.config.USD_TICKERS
         )
         self.geography_returns = self.data_loader.get_returns(self.geography_prices)
         print(f"Geography data loaded: {len(self.geography_prices)} days, {len(self.geography_prices.columns)} regions")

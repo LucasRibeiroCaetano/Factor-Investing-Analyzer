@@ -26,13 +26,13 @@ class Config:
     # Geography ETF Tickers
     GEOGRAPHY_TICKERS: Dict[str, str] = {
         "US Market": "SPY",
-        "Europe": "EXSA.DE",  # EUR-denominated, requires conversion
+        "Europe": "EXSA.DE",
         "Emerging Markets": "EEM"
     }
     
-    # Currency Conversion
-    CURRENCY_PAIR: str = "EURUSD=X"
-    EUR_TICKERS: List[str] = ["EXSA.DE"]  # Tickers that need EUR to USD conversion
+    # Currency Conversion (Base Currency: EUR)
+    CURRENCY_PAIR: str = "EURUSD=X"  # Will be inverted to get USD/EUR rate
+    USD_TICKERS: List[str] = ["SPY", "EEM", "VLUE", "MTUM", "QUAL", "USMV"]  # Tickers that need USD to EUR conversion
     
     # Date Range for Analysis
     START_DATE: str = "2018-01-01"
