@@ -1,0 +1,220 @@
+"""
+Factor Data Loader Module.
+Handles data ingestion from Yahoo Finance with currency conversion and fallback mock data.
+"""
+import warnings
+from typing import Dict, Optional, List
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+warnings.filterwarnings('ignore')
+
+try:
+    import yfinance as yf
+    YFINANCE_AVAILABLE = True
+except ImportError:
+    YFINANCE_AVAILABLE = False
+    warnings.warn("yfinance not available. Will use mock data.")
+
+
+class FactorDataLoader:
+    """
+    Loads and processes factor and geography ETF data.
+    Handles EUR to USD conversion for European ETFs.
+    Provides fallback mock data if yfinance fails.
+    """
+    
+    def __init__(self, start_date: str, end_date: str, currency_pair: str = "EURUSD=X"):
+        """
+        Initialize the data loader.
+        
+        Args:
+            start_date: Start date for data retrieval (YYYY-MM-DD)
+            end_date: End date for data retrieval (YYYY-MM-DD)
+            currency_pair: Currency pair ticker for conversion (default: EURUSD=X)
+        """
+        self.start_date: str = start_date
+        self.end_date: str = end_date
+        self.currency_pair: str = currency_pair
+        self.eur_usd_rate: Optional[pd.Series] = None
+        
+    def _fetch_data(self, ticker: str) -> Optional[pd.DataFrame]:
+        """
+        Fetch data from Yahoo Finance for a single ticker.
+        
+        Args:
+            ticker: Stock/ETF ticker symbol
+            
+        Returns:
+            DataFrame with OHLCV data or None if fetch fails
+        """
+        if not YFINANCE_AVAILABLE:
+            return None
+            
+        try:
+            data = yf.download(
+                ticker,
+                start=self.start_date,
+                end=self.end_date,
+                progress=False,
+                auto_adjust=False  # Changed to False to get consistent column structure
+            )
+            
+            if data.empty:
+                warnings.warn(f"No data retrieved for {ticker}")
+                return None
+            
+            # Handle multi-level columns from yfinance
+            if isinstance(data.columns, pd.MultiIndex):
+                # Drop the ticker level if present
+                data.columns = data.columns.droplevel(1)
+                
+            return data
+            
+        except Exception as e:
+            warnings.warn(f"Failed to fetch {ticker}: {str(e)}")
+            return None
+    
+    def _load_currency_conversion(self) -> bool:
+        """
+        Load EUR/USD exchange rate for currency conversion.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        currency_data = self._fetch_data(self.currency_pair)
+        
+        if currency_data is not None and 'Close' in currency_data.columns:
+            self.eur_usd_rate = currency_data['Close']
+            return True
+        else:
+            # Fallback: use constant conversion rate
+            warnings.warn(f"Failed to load {self.currency_pair}, using constant rate 1.10")
+            return False
+    
+    def _convert_eur_to_usd(self, eur_prices: pd.Series, ticker: str) -> pd.Series:
+        """
+        Convert EUR-denominated prices to USD.
+        
+        Args:
+            eur_prices: Price series in EUR
+            ticker: Ticker symbol for logging
+            
+        Returns:
+            Price series converted to USD
+        """
+        if self.eur_usd_rate is not None:
+            # Align dates and forward-fill missing rates
+            aligned_rate = self.eur_usd_rate.reindex(eur_prices.index, method='ffill')
+            return eur_prices * aligned_rate
+        else:
+            # Use constant conversion rate as fallback
+            return eur_prices * 1.10
+    
+    def load_tickers(self, tickers_dict: Dict[str, str], eur_tickers: List[str]) -> pd.DataFrame:
+        """Load and process ticker data with currency conversion."""
+        # Load currency conversion rate first
+        self._load_currency_conversion()
+        
+        price_data = {}
+        
+        for name, ticker in tickers_dict.items():
+            try:
+                # Fetch data
+                data = self._fetch_data(ticker)
+                
+                if data is None or data.empty:
+                    print(f"Warning: No data for {name} ({ticker}), using mock data")
+                    price_data[name] = self._generate_mock_data(name)
+                    continue
+                
+                # Get adjusted close prices
+                if 'Adj Close' in data.columns:
+                    prices = data['Adj Close']
+                elif 'Close' in data.columns:
+                    prices = data['Close']
+                else:
+                    print(f"Warning: No price column found for {name} ({ticker}), using mock data")
+                    price_data[name] = self._generate_mock_data(name)
+                    continue
+                
+                # Ensure we have a Series, not a DataFrame
+                if isinstance(prices, pd.DataFrame):
+                    if prices.shape[1] == 1:
+                        prices = prices.iloc[:, 0]
+                    else:
+                        print(f"Warning: Multiple columns found for {name} ({ticker}), using first column")
+                        prices = prices.iloc[:, 0]
+                
+                # Ensure the Series has a name
+                prices.name = name
+                
+                # Convert EUR tickers to USD
+                if ticker in eur_tickers:
+                    prices = self._convert_eur_to_usd(prices, ticker)
+                    prices.name = name  # Restore name after conversion
+                
+                price_data[name] = prices
+                
+            except Exception as e:
+                print(f"Warning: Failed to load {name} ({ticker}): {str(e)}")
+                print(f"Using mock data for {name}")
+                price_data[name] = self._generate_mock_data(name)
+                continue
+        
+        if not price_data:
+            raise ValueError("No ticker data was successfully loaded")
+        
+        # Create DataFrame and handle any alignment issues
+        df = pd.DataFrame(price_data)
+        df = df.dropna(how='all')  # Remove rows where all values are NaN
+        
+        return df
+    
+    def _generate_mock_data(self, name: str) -> pd.Series:
+        """
+        Generate realistic mock price data for fallback scenarios.
+        Uses geometric Brownian motion to simulate realistic returns.
+        
+        Args:
+            name: Name of the asset (for seeding randomness)
+            
+        Returns:
+            Series with simulated price data
+        """
+        # Parse dates
+        start = datetime.strptime(self.start_date, "%Y-%m-%d")
+        end = datetime.strptime(self.end_date, "%Y-%m-%d")
+        
+        # Generate date range (business days)
+        date_range = pd.bdate_range(start=start, end=end)
+        n_days = len(date_range)
+        
+        # Set seed based on name for reproducibility
+        np.random.seed(hash(name) % (2**32))
+        
+        # Geometric Brownian Motion parameters
+        initial_price = 100.0
+        drift = 0.0002  # Daily drift (~5% annual)
+        volatility = 0.01  # Daily volatility (~16% annual)
+        
+        # Generate returns
+        returns = np.random.normal(drift, volatility, n_days)
+        
+        # Calculate prices
+        price_series = initial_price * np.exp(np.cumsum(returns))
+        
+        return pd.Series(price_series, index=date_range, name=name)
+    
+    def get_returns(self, prices: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate daily returns from price data.
+        
+        Args:
+            prices: DataFrame with price data
+            
+        Returns:
+            DataFrame with daily returns
+        """
+        return prices.pct_change().dropna()
