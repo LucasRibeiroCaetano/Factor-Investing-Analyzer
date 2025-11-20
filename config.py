@@ -34,9 +34,9 @@ class Config:
     CURRENCY_PAIR: str = "EURUSD=X"  # Will be inverted to get USD/EUR rate
     USD_TICKERS: List[str] = ["SPY", "EEM", "VLUE", "MTUM", "QUAL", "USMV"]  # Tickers that need USD to EUR conversion
     
-    # Date Range for Analysis
-    START_DATE: str = "2018-01-01"
-    END_DATE: str = datetime.now().strftime("%Y-%m-%d")
+    # Date Range for Analysis (defaults, Portuguese format: DD/MM/YYYY)
+    START_DATE: str = "01/01/2000"
+    END_DATE: str = datetime.now().strftime("%d/%m/%Y")
     
     # Visualization Settings
     PLOT_THEME: str = "dark"  # matplotx github theme

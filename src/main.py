@@ -3,6 +3,8 @@ Main Entry Point for Factor Investing Analyzer.
 Orchestrates the complete analysis pipeline.
 """
 import sys
+import argparse
+from datetime import datetime
 from pathlib import Path
 
 # Add src to path for imports
@@ -21,10 +23,21 @@ class FactorInvestingAnalyzer:
     Coordinates data loading, analysis, and visualization.
     """
     
-    def __init__(self):
-        """Initialize the analyzer with configuration settings."""
+    def __init__(self, start_date: str = None, end_date: str = None):
+        """Initialize the analyzer with configuration settings.
+        
+        Args:
+            start_date: Optional start date (DD/MM/YYYY). Defaults to 01/01/2000.
+            end_date: Optional end date (DD/MM/YYYY). Defaults to today.
+        """
         self.config = Config()
         self.config.ensure_directories()
+        
+        # Override dates if provided
+        if start_date:
+            self.config.START_DATE = start_date
+        if end_date:
+            self.config.END_DATE = end_date
         
         # Initialize components
         self.data_loader = FactorDataLoader(
@@ -249,9 +262,84 @@ class FactorInvestingAnalyzer:
             sys.exit(1)
 
 
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Factor Investing Analyzer - Comprehensive factor and geographic ETF analysis tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python src/main.py
+  python src/main.py --start-date 01/01/2015
+  python src/main.py --start-date 01/01/2010 --end-date 31/12/2020
+  python src/main.py -s 15/06/2018 -e 15/06/2023
+
+Note: All returns are calculated in EUR (base currency).
+      Date format: DD/MM/YYYY (Portuguese format)
+        """
+    )
+    
+    parser.add_argument(
+        '-s', '--start-date',
+        type=str,
+        default=None,
+        metavar='DD/MM/YYYY',
+        help='Start date for analysis (default: 01/01/2000)'
+    )
+    
+    parser.add_argument(
+        '-e', '--end-date',
+        type=str,
+        default=None,
+        metavar='DD/MM/YYYY',
+        help='End date for analysis (default: today)'
+    )
+    
+    return parser.parse_args()
+
+
+def validate_date(date_string: str, param_name: str) -> bool:
+    """Validate date format.
+    
+    Args:
+        date_string: Date string to validate
+        param_name: Parameter name for error messages
+        
+    Returns:
+        True if valid, exits program if invalid
+    """
+    try:
+        datetime.strptime(date_string, "%d/%m/%Y")
+        return True
+    except ValueError:
+        print(f"ERROR: Invalid {param_name} format. Please use DD/MM/YYYY format.")
+        print(f"Example: 15/01/2020")
+        sys.exit(1)
+
+
 def main():
-    """Main entry point."""
-    analyzer = FactorInvestingAnalyzer()
+    """Main entry point with argument parsing."""
+    args = parse_arguments()
+    
+    # Validate dates if provided
+    if args.start_date:
+        validate_date(args.start_date, "start date")
+    if args.end_date:
+        validate_date(args.end_date, "end date")
+    
+    # Validate date order if both provided
+    if args.start_date and args.end_date:
+        start = datetime.strptime(args.start_date, "%d/%m/%Y")
+        end = datetime.strptime(args.end_date, "%d/%m/%Y")
+        if start >= end:
+            print("ERROR: Start date must be before end date.")
+            sys.exit(1)
+    
+    # Create and run analyzer with provided dates
+    analyzer = FactorInvestingAnalyzer(
+        start_date=args.start_date,
+        end_date=args.end_date
+    )
     analyzer.run()
 
 

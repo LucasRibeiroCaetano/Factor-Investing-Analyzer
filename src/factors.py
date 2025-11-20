@@ -30,12 +30,13 @@ class FactorDataLoader:
         Initialize the data loader.
         
         Args:
-            start_date: Start date for data retrieval (YYYY-MM-DD)
-            end_date: End date for data retrieval (YYYY-MM-DD)
+            start_date: Start date for data retrieval (DD/MM/YYYY)
+            end_date: End date for data retrieval (DD/MM/YYYY)
             currency_pair: Currency pair ticker for conversion (default: EURUSD=X)
         """
-        self.start_date: str = start_date
-        self.end_date: str = end_date
+        # Convert Portuguese date format (DD/MM/YYYY) to ISO format (YYYY-MM-DD) for yfinance
+        self.start_date: str = datetime.strptime(start_date, "%d/%m/%Y").strftime("%Y-%m-%d")
+        self.end_date: str = datetime.strptime(end_date, "%d/%m/%Y").strftime("%Y-%m-%d")
         self.currency_pair: str = currency_pair
         self.usd_eur_rate: Optional[pd.Series] = None
         
@@ -185,7 +186,7 @@ class FactorDataLoader:
         Returns:
             Series with simulated price data
         """
-        # Parse dates
+        # Parse dates (already in ISO format internally)
         start = datetime.strptime(self.start_date, "%Y-%m-%d")
         end = datetime.strptime(self.end_date, "%Y-%m-%d")
         

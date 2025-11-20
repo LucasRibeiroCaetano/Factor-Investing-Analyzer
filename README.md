@@ -5,6 +5,56 @@
 
 A production-grade Python application for analyzing factor-based and geographic investment strategies. This tool provides comprehensive performance analysis, risk metrics, and professional visualizations using real market data, **optimized for Euro-based investors**.
 
+## Showcase
+
+### Factor Analysis Visualizations
+
+<div align="center">
+
+#### Cumulative Returns Comparison
+![Factor Cumulative Returns](output/factor_cumulative_returns.png)
+*Normalized performance comparison of factor-based ETFs over time*
+
+#### Drawdown Analysis
+![Factor Drawdowns](output/factor_drawdowns.png)
+*Peak-to-trough decline analysis showing risk exposure during downturns*
+
+#### Factor Correlation Matrix
+![Factor Correlation Matrix](output/factor_correlation_matrix.png)
+*Correlation heatmap revealing diversification opportunities between factors*
+
+#### Performance Summary
+![Factor Performance Summary](output/factor_performance_summary.png)
+*Comprehensive metrics table comparing returns, volatility, and risk-adjusted performance*
+
+#### Sharpe Ratio Comparison
+![Factor Sharpe Comparison](output/factor_sharpe_comparison.png)
+*Risk-adjusted return rankings across factor strategies*
+
+</div>
+
+### Geographic Analysis Visualizations
+
+<div align="center">
+
+#### Regional Performance
+![Geography Performance](output/geography_performance.png)
+*Comparative performance of US, European, and Emerging Markets*
+
+#### Regional Allocation
+![Geography Allocation Pie](output/geography_allocation_pie.png)
+*Portfolio composition after market drift showing regional weights*
+
+#### Regional Correlation Matrix
+![Geography Correlation Matrix](output/geography_correlation_matrix.png)
+*Geographic diversification analysis through correlation patterns*
+
+#### Regional Sharpe Ratios
+![Geography Sharpe Comparison](output/geography_sharpe_comparison.png)
+*Risk-adjusted performance comparison across geographic regions*
+
+</div>
+
 ## Features
 
 - **Factor Analysis**: Evaluate classic investment factors including Value (VLUE), Momentum (MTUM), Quality (QUAL), and Low Volatility (USMV)
@@ -51,26 +101,56 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the complete analysis pipeline:
+### Basic Usage
+
+Run the complete analysis with default date range (2000-01-01 to today):
 
 ```bash
 python src/main.py
 ```
 
+### Command-Line Arguments
+
+Customize the analysis period using command-line arguments (Portuguese date format: DD/MM/YYYY):
+
+```bash
+# Analyze from a specific start date to today
+python src/main.py --start-date 01/01/2015
+
+# Analyze a specific date range
+python src/main.py --start-date 01/01/2010 --end-date 31/12/2020
+
+# Using short flags
+python src/main.py -s 15/06/2018 -e 15/06/2023
+
+# Show help and all available options
+python src/main.py --help
+```
+
+### What the Analyzer Does
+
 The analyzer will:
-1. Download historical price data from Yahoo Finance
-2. Fetch live EURUSD exchange rates for the analysis period
-3. Convert USD-denominated ETFs to EUR (base currency)
-4. Calculate comprehensive performance metrics in EUR
-5. Generate professional visualizations
-6. Save all outputs to the `output/` directory
+1. Accept dates in Portuguese format (DD/MM/YYYY)
+2. Download historical price data from Yahoo Finance for the specified period
+3. Fetch live EURUSD exchange rates for the analysis period
+4. Convert USD-denominated ETFs to EUR (base currency)
+5. Calculate comprehensive performance metrics in EUR
+6. Generate professional visualizations
+7. Save all outputs to the `output/` directory
 
 ## Configuration
+
+### Command-Line Options
+
+- **Date Range**: Use `--start-date` and `--end-date` arguments (see Usage section)
+- **Help**: Run `python src/main.py --help` for all available options
+
+### Configuration File
 
 Edit `config.py` to customize:
 
 - **Tickers**: Modify `FACTOR_TICKERS` and `GEOGRAPHY_TICKERS` dictionaries
-- **Date Range**: Adjust `START_DATE` and `END_DATE`
+- **Default Date Range**: Adjust `START_DATE` and `END_DATE` defaults
 - **Analysis Parameters**: Change `RISK_FREE_RATE` or `TRADING_DAYS_PER_YEAR`
 - **Visualization Settings**: Customize `FIGURE_SIZE`, `DPI`, and theme
 
