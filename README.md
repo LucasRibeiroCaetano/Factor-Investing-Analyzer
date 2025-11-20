@@ -183,16 +183,6 @@ The analyzer generates the following visualizations in the `output/` directory:
 
 ## Technical Details
 
-### Object-Oriented Design
-
-The project follows strict OOP principles with clearly separated concerns:
-
-- `FactorDataLoader`: Handles data ingestion, currency conversion, and mock data generation
-- `PerformanceAnalyzer`: Calculates all performance and risk metrics
-- `GeographyAnalyzer`: Specialized geographic exposure analysis
-- `Visualizer`: Creates and saves all charts with consistent styling
-- `FactorInvestingAnalyzer`: Main orchestrator coordinating the pipeline
-
 ### Currency Conversion (EUR Base Currency)
 
 **All analysis is performed in EUR** to reflect the true returns for Euro-based investors. USD-denominated ETFs (SPY, EEM, VLUE, MTUM, QUAL, USMV) are automatically converted to EUR using historical EURUSD=X exchange rates from Yahoo Finance. The system:
@@ -215,17 +205,6 @@ If yfinance fails to retrieve data (network issues, API changes, etc.), the syst
 - **numpy**: Numerical computations
 - **matplotlib**: Chart generation
 - **matplotx**: Professional chart themes
-
-## Professional Use
-
-This codebase is designed to be portfolio-ready:
-
-- Type hints throughout for clarity and IDE support
-- Comprehensive docstrings for all classes and methods
-- PEP 8 compliant code formatting
-- Modular design for easy extension and testing
-- Production-grade error handling
-- Professional documentation
 
 ## License
 
